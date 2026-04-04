@@ -171,7 +171,7 @@ This guide does not claim absolute protection against groups with near unlimited
   Start with a baseline with the service running as a non-root user before sandboxing.  
   Run "systemd-analyze security [yourservice.service]" for insight.    
   Begin adding constraints and look for errors.  
-   # /etc/systemd/system/service.ex.d/hardening.conf  
+   #/etc/systemd/system/service.ex.d/hardening.conf  
    [Service]  
    NoNewPrivileges=yes  
    PrivateTmp=yes  
