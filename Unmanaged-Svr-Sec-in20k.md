@@ -1,5 +1,5 @@
 # Unmanned Server Security - Basic Operational Guide   
-## (context): This repository is about unmanaged server (mostly headless linux deployments) setup/security and best practices. This markdown file is a simple prototype for conveying this information, utilise sub folders for automated versions of portions of the instructions listed here as they come. You'll notice this document contains many vague suggestions. Simply because I want to keep this relevant/helpful even astechnology and companies shift or mutate over time. This document is designed to be easily researchable (i.e. the newest distros of certain OSs) to counteract any errors caused by ambiguity.
+## (context): This repository is about unmanaged server (mostly headless linux deployments) setup/security and best practices. This markdown file is a simple prototype for conveying this information, utilise sub folders for automated versions of portions of the instructions listed here as they come. You'll notice this document contains many vague suggestions. Simply because I want to keep this relevant/helpful even as technology and companies shift or mutate over time. This document is designed to be easily researchable (i.e. the newest distros of certain OSs) to counteract any errors caused by ambiguity.
 
 Unmanaged server within this document's context refers to servers you purchase that come with largely unmodified and default permissions, with you (end user) getting full root access. That is to say the ISP doesn't manage it or run the service for you.
 
@@ -221,10 +221,16 @@ This guide does not claim absolute protection against groups with near unlimited
   Certified Data Destruction from a third party after doing your pass overs.  
     
 6. Misc  
- - Depending on priority and budget, ordering pen testing (after performing your own exhaustive pen test, of course) can give clients confidence and lower risk substantially.   
- - Infrastructure scaling should ideally partition services/components to a whole, specific server or VM when possible. This segments attacks and is more friendly with scalability.  
- - This is the end, but the most important thing in security is knowing you don't know everything. No guide can cover every exploit and no one can retain what they read perfectly. So it is important to always challenge assumptions, ask questions, be informed, and stay vigilant. Thank you for taking time to read my manpage on unmanaged servers.   
- 
- - MORE COMING TO THIS SECTION/TBD 
+ Depending on priority and budget, ordering pen testing (after performing your own exhaustive pen test, of course) can give clients confidence and lower risk substantially.   
+ Infrastructure scaling should ideally partition services/components to a whole, specific server or VM when possible. This segments attacks and is more friendly with scalability.
+ This is the end, but the most important thing in security is knowing you don't know everything. No guide can cover every exploit and no one can retain what they read perfectly. So it is important to always challenge assumptions, ask questions, be informed, and stay vigilant. Thank you for taking time to read my manpage on unmanaged servers.
+
+ Threat Modeling and Attack Analysis  
+  These two are useful tools once you've got your server setup and are ready to run and perform whatever operation the server is made for.  
+  At the most basic level, these concepts are intuitive: threat modeling is spotting threats and theories about weak points, and attack surface analysis simply sees what can be attacked.  
+  Dataflow diagrams are useful tools for both of these to map trust boundaries and how traffic routes throughout the system.  
+  Many articles exist on these two topics; I'd recommend reading some or watching videos on these whenever you find the time.    
+  
+ - MORE COMING TO THIS SECTION/TBD     
 
 
