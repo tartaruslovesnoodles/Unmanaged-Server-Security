@@ -1,10 +1,12 @@
 # Unmanned Server Security - Basic Operational Guide   
 ## (context): This repository is about unmanaged server (mostly headless linux deployments) setup/security and best practices. This markdown file is a simple prototype for conveying this information, utilise sub folders for automated versions of portions of the instructions listed here as they come. You'll notice this document contains many vague suggestions. Simply because I want to keep this relevant/helpful even as technology and companies shift or mutate over time. This document is designed to be easily researchable (i.e. the newest distros of certain OSs) to counteract any errors caused by ambiguity.
 
-Unmanaged server within this document's context refers to servers you purchase that come with largely unmodified and default permissions, with you (end user) getting full root access. That is to say the ISP doesn't manage it or run the service for you.
+Unmanaged server within this document's context refers to servers you purchase that come with largely unmodified and default permissions, with you (end user) getting full root access. That is to say the ISP doesn't manage it or run the service for you.    
 
 The expected threat model throughout this is a medium/typical to high threat environment. It addresses opportunistic attacks (automated scanning, known vuln attempts on a target list, any other "blind" attack) and well-resourced adversaries/targeted attacks (targeting your infrastructure intentionally).   
 This guide does not claim absolute protection against groups with near unlimited resources, lawful coercive/control powers, or zero-days for every app on Earth. It focuses on raising cost, reducing attack vectors, and sectioning off damage while also providing some reactive actions once something has happened.
+
+CURRENT ISSUES: Indentation & Formatting. I plan to fix this over the next few days. Sadly, Github seems to have some form of an altered markdown file format. So I'm fighting it while trying to reformat a new way of indenting. The content is largely the same, there is simply no way to determine a point from a 'subpoint' throughout the document.   
 
 0. Basic Checklist/Golden Path aka tl;dr (re-read this whenever you set up new servers if you follow this guide).  
  A. Confirm out-of-band access.  
@@ -23,21 +25,20 @@ This guide does not claim absolute protection against groups with near unlimited
  M. Enable automatic security updates.  
  N. Monitor auth, disk, cpu, ram, and nic saturation.  
  
-1. Network/Env Concerns
+1. Network/Env Concerns   
+- Confirm out of band access (kvm, rescue boot, console, etc).   
+- Confirm a rollback path (ie snapshot/backup and test a restore) and secure offsite storage.            
+ A. Recovery is primarily for the control plane or the server that holds referenced files and communicates through the network. For data plane or servers that primarily fetch and transmit data, snapshots aren't needed and may be a security detriment in some cases.    
+- Find out how you receive alerts for server issues and who sends them.   
+- Decide where "secrets" will live at this stage, do NOT budge for convenience. Find work arounds and only disregard if a security risk presents itself.   
+ A. Never store on repos.   
+ B. Replace them on any leak suspicion.   
+ C. Separate production, staging, and dev secrets. 
 
- Confirm out of band access (kvm, rescue boot, console, etc).   
- Confirm a rollback path (ie snapshot/backup and test a restore) and secure offsite storage.  
-  Recovery is primarily for the control plane or the server that holds referenced files and communicates through the network. For data plane or servers that primarily fetch and transmit data, snapshots aren't needed and may be a security detriment in some cases.  
- Find out how you receive alerts for server issues and who sends them.   
- Decide where "secrets" will live at this stage, do NOT budge for convenience. Find work arounds and only disregard if a security risk presents itself.   
-  Never store on repos.   
-  Replace them on any leak suspicion.   
-  Separate production, staging, and dev secrets. 
 
+ Depending on if you are renting a server in a datacenter, placing this server into an existing datacenter, are running local (WAN) hardware, or are running local (LAN) hardware then the security prerequisites are different.     
 
- Depending on if you are renting a server in a datacenter, placing this server into an existing datacenter, are running local (WAN) hardware, or are running local (LAN) hardware then the security prerequisites are different.
-
- Rented Servers   
+ Rented Servers      
   A. Decide on what you value in a server before browsing ISPs: CPU, parallel processing(GPU), port speed, RAM, DoS protection, customizability, scalability, upstream capabilities, stateless vs stateful network, null route policy, datacenter backbone, etc.  
   B. Look at the 'top 20' hosts (do NOT rely on "top #n Dedicated Server Hosts" articles, these are often sponsored, look around and talk to devs instead). As of Jan 2026 (take w/ more salt the more years pass), a few solid choices are Datapacket, OVH, Hetzner, VOX, and IBM).  
   C. Know your host -- Research them extensively for limits and perks (ie from A).   
@@ -46,18 +47,19 @@ This guide does not claim absolute protection against groups with near unlimited
   F. Investigate privacy policies, data sales, and EULA carefully.  
   G. If you have a network composed of servers from multiple hosts, consider using different emails and account credentials/verification methods to minimize spread against panel-access compromise attacks.  
   E. An encrypted disk is an option for rented servers but I wouldn't recommend it despite its potential security benefits. It is near mandatory with minimal downside for other types of deployment (not rented).  
-  * Theft is a possibility with rented servers, you have very little control over the security level and who can access your server in a datacenter you don't own: If the sec of the ISP looks bad, encrypt  (…and maybe go to a different ISP).  
- Inputting Into datacenter  
+  * Theft is a possibility with rented servers, you have very little control over the security level and who can access your server in a datacenter you don't own: If the sec of the ISP looks bad, encrypt  (…and maybe go to a different ISP).                                         
+
+Inputting Into datacenter  
   A. Encrypt your disk.  
   B. Ensure employees verify who are performing reboots, taking console cables, drive swaps, etc. Keep this logged and backed up. It is a social engineer's paradise without this.  
   C. Draft and document the chain of custody and your hardware handling policy.  
-  E. Restrict console access.   
-  F. Confirm other tenants can't arp-poison/sniff anything.  
-  G. If you have an upstream bandwidth provider, ensure they offer: RTBH, fast response team, and a clear scrubbing/null route policy.  
-  H. Disable BMC if you don't trust it.  
-  I. Hardware backed ssh.  
-   Security key, TPM-backed SSH, or Secure Enclave. A key/smartcard, like from Yubikey or FIDO2 would be the best choice in my opinion.  
- Running Local(LAN)  
+  D. Restrict console access.   
+  E. Confirm other tenants can't arp-poison/sniff anything.  
+  F. If you have an upstream bandwidth provider, ensure they offer: RTBH, fast response team, and a clear scrubbing/null route policy.  
+  G. Disable BMC if you don't trust it.  
+  H. Hardware backed ssh.  
+   Security key, TPM-backed SSH, or Secure Enclave. A key/smartcard, like from Yubikey or FIDO2 would be the best choice in my opinion.   
+Running Local(LAN)  
   A. Encrypt your disk.  
   B. Secure the physical location of your server --  in a locked cabinet, in a locked room, in a private locked building  
   C. Create a VLAN for servers to partition/quarantine the network.  
@@ -65,34 +67,36 @@ This guide does not claim absolute protection against groups with near unlimited
   E. Ensure safe shutdown in the event of power loss.  
   F. A generator or some way to ensure a failover for electricity in sudden outages is ideal.  
   G. Hardware backed ssh.  
-   Security key, TPM-backed SSH, or Secure Enclave. A key/smartcard, like from Yubikey or FIDO2 would be the best choice in my opinion.  
- Running Locally(WAN)  
+   - Security key, TPM-backed SSH, or Secure Enclave. A key/smartcard, like from Yubikey or FIDO2 would be the best choice in my opinion.  
+   
+Running Locally(WAN)    
   A. Encrypt your disk.  
   B. Drop UPnP.  
   C. Your DDoS protection is only as good as your hardware, if this is a concern consider buying upstream bandwidth. If not just do some simple rules on a "whitelist and drop everything else" policy and some load balancing.  
   D. Decide how admin access will work, don't leave SSH open to the entire internet for example.  
-  * IP whitelisting, proxy ssh, permission distribution, etc.  
+  * IP whitelisting, proxy ssh, permission distribution, etc.              
+               
   E. Split DNS and don't leak internal names.  
   F. Router hardening is most relevant for this type of server deployment.  
   G. Without purchasing an IP block from ARIN/RIPE your reputation will likely be variable   
   H. Use reverse proxies or edge relays when possible to hide your IP.  
   I. WAF/CDN if applicable.  
   J. Hardware backed ssh.  
-   Security key, TPM-backed SSH, or Secure Enclave. A sec key/smartcard, like from Yubikey or FIDO2 would be the best choice in my opinion.
+   - Security key, TPM-backed SSH, or Secure Enclave. A sec key/smartcard, like from Yubikey or FIDO2 would be the best choice in my opinion.
 
 -more coming soon  
  
 
 2. Operating System  
  Pick an operating system that is trusted, high support with your hardware arch, new (version), and secure:  
-  - Ubuntu  
-  - Debian  
-  - RHEL  
- There are more solid choices than these, but these are the least debated and least polarized choices. It is a common consensus they're the most reliable and consistent operating systems for headless servers across architectures.  
- You may notice I did NOT include the versions that are currently new and most supported, that is because that will age like milk. Simply check the OSs on a search browser and find out the newest stable/supported release.  
-  May also want to mark EoLs of your chosen OS versions if you plan to run a server for multiple years.  
-  LTS may be ideal if you intend to "run and forget" a server for a long time (1 year+).  
- Make sure to minimize your install to base unless explicitly needed, this adds unnecessary attack surface area.  
+  A. Ubuntu  
+  B. Debian  
+  C. RHEL  
+ - There are more solid choices than these, but these are the least debated and least polarized choices. It is a common consensus they're the most reliable and consistent operating systems for headless servers across architectures.  
+ - You may notice I did NOT include the versions that are currently new and most supported, that is because that will age like milk. Simply check the OSs on a search browser and find out the newest stable/supported release.  
+ A. May also want to mark EoLs of your chosen OS versions if you plan to run a server for multiple years.    
+ B.  LTS may be ideal if you intend to "run and forget" a server for a long time (1 year+).  
+ Make sure to minimize your install to base unless explicitly needed, this adds unnecessary attack surface area.         
   * IF srvc =! required to run server's purpose: shouldn't be installed.  
  
 -more coming soon
