@@ -6,7 +6,7 @@ Unmanaged server within this document's context refers to servers you purchase t
 The expected threat model throughout this is a medium/typical to high threat environment. It addresses opportunistic attacks (automated scanning, known vuln attempts on a target list, any other "blind" attack) and well-resourced adversaries/targeted attacks (targeting your infrastructure intentionally).   
 This guide does not claim absolute protection against groups with near unlimited resources, lawful coercive/control powers, or zero-days for every app on Earth. It focuses on raising cost, reducing attack vectors, and sectioning off damage while also providing some reactive actions once something has happened.
 
-CURRENT ISSUES: Indentation & Formatting. I plan to fix this over the next few days. Sadly, Github seems to have some form of an altered markdown file format. So I'm fighting it while trying to reformat a new way of indenting. The content is largely the same, there is simply no way to determine a point from a 'subpoint' throughout the document.   
+CURRENT ISSUES: Indentation & Formatting. I plan to fix this over the next few days. Sadly, Github seems to have some form of an altered markdown file format. So I'm fighting it while trying to reformat a new way of indenting. The content is largely the same, though there is simply no way to determine a point from a 'subpoint' throughout the document.   
 
 0. Basic Checklist/Golden Path aka tl;dr (re-read this whenever you set up new servers if you follow this guide).  
  A. Confirm out-of-band access.  
@@ -46,7 +46,7 @@ CURRENT ISSUES: Indentation & Formatting. I plan to fix this over the next few d
   E. Utilize the host's upstream firewall if present to filter sensitive ports (ie ssh) before packets reach your server, this can block port scans (soley dropping/rejecting locally to a port still gets scanned).  
   F. Investigate privacy policies, data sales, and EULA carefully.  
   G. If you have a network composed of servers from multiple hosts, consider using different emails and account credentials/verification methods to minimize spread against panel-access compromise attacks.  
-  E. An encrypted disk is an option for rented servers but I wouldn't recommend it despite its potential security benefits. It is near mandatory with minimal downside for other types of deployment (not rented).  
+  H. An encrypted disk is an option for rented servers but I wouldn't recommend it despite its potential security benefits. It is near mandatory with minimal downside for other types of deployment (not rented).  
   * Theft is a possibility with rented servers, you have very little control over the security level and who can access your server in a datacenter you don't own: If the sec of the ISP looks bad, encrypt  (…and maybe go to a different ISP).                                         
 
 Inputting Into datacenter  
@@ -96,7 +96,7 @@ Running Locally(WAN)
  - You may notice I did NOT include the versions that are currently new and most supported, that is because that will age like milk. Simply check the OSs on a search browser and find out the newest stable/supported release.  
  A. May also want to mark EoLs of your chosen OS versions if you plan to run a server for multiple years.    
  B.  LTS may be ideal if you intend to "run and forget" a server for a long time (1 year+).  
- Make sure to minimize your install to base unless explicitly needed, this adds unnecessary attack surface area.         
+ C.  Make sure to minimize your install to base unless explicitly needed, this adds unnecessary attack surface area.           
   * IF srvc =! required to run server's purpose: shouldn't be installed.  
  
 -more coming soon
@@ -106,11 +106,14 @@ Running Locally(WAN)
 3. SSH Setup  
  Create an SSH key to replace your password (general sys advice below):  
   Use modern key types:  
+```
    ed25519 preferred  
    rsa only if >= 4096 bits  
+```
  Disable legacy algorithms in your sshd cfg  
- Create a sudo user and then disable root login (make the super user also have an ssh key login)  
+ Create a sudo user and then disable root login (make the super user also have an ssh key login).  
  Adjust your SSHD cfg (typical setup below, adjust slightly if needed for system constraints):  
+ ```
   PasswordAuthentication no  
   PubkeyAuthentication yes  
   PermitRootLogin no  
@@ -120,24 +123,28 @@ Running Locally(WAN)
   X11Forwarding no  
   AllowTcpForwarding no #(unless explicitly needed).  
   PermitEmptyPasswords no  
+ ```
  Change your SSH port and do a whitelist with iptables or NFT (simple example below:)  
+ ```
   iptables -A INPUT -p tcp -s [ip/range to whitelist, do not include brackets] --dport [YOUR SSH PORT HERE. DO NOT INCLUDE BRACKETS] -j ACCEPT  
-  iptables -A INPUT -p tcp --dport [YOUR SSH PORT HERE. DO NOT INCLUDE BRACKETS] -j DROP  
+  iptables -A INPUT -p tcp --dport [YOUR SSH PORT HERE. DO NOT INCLUDE BRACKETS] -j DROP 
+ ```
    * Ensure this is at the top of your iptables or nftables priority. AND note this will lock you out if you lose access to the whitelist IP. To fix this you can reboot or add more static whitelist IPs for redundancy prior to entry.   
-   * Changing your port isn't imperative but it isn't irrelevant like many "OPSEC gurus" echo. It's a useful 'strainer' for identifying serious precursor activity about to arise, for example it filters out automated mass scanners from logs.  
- You should assign services to their own users with lowest needed perms, or user nobody if there is a major portability or automation concern that can't be easily circumvented.   
- * Adding multiple services to user nobody means a compromise can spread with much less friction to any service on nobody. Ideally user nobody works best if there are a limited number of services on the system and only 1 service utilizes user nobody. Data plane servers are the main example of where user nobody may be acceptable. 
-
-   
- Some people may suggest you should add a rate limit to your ssh port, this does increase security but can be used by bad actors to DoS your ssh port (can't use the srvc).  
+   * Changing your port isn't imperative but it isn't irrelevant like many "OPSEC gurus" echo. It's a useful 'strainer' for spotting serious precursor activity about to arise, for example it filters out automated mass scanners from logs. You can do this by modifying /etc/ssh/sshd_config (slightly different depending on OS, but usually that path), just uncomment '#Port' then change the number to a valid unused port. Then restart the ssh service. 
+ - You should assign services to their own users with lowest needed perms, or user nobody if there is a major portability or automation concern that can't be easily circumvented.   
+ A. Adding multiple services to user nobody means a compromise can spread with much less friction to any service on nobody. Ideally user nobody works best if there are a limited number of services on the system and only 1 service utilizes user nobody. Data plane servers are the main example of where user nobody may be acceptable.   
+- I'd suggest putting SSH on its own IP address, and that IP shouldn't be more visibly related than it needs to be to your infrastructure, this can assist in dealing with scanning/general probing. This is already mentioned indirectly later in the document, but I'll place it here for prudence.   
+- Some people may suggest you should add a rate limit to your ssh port, this does increase security but can be used by bad actors to DoS your ssh port (can't use the srvc).    
   * I would personally recommend doing a rate limit on a per linux user and or IP address basis. If not, a rate limit can often be counterproductive.  
- Rotate your SSH keys often and make one per user per machine, don't share keys, and remove ghost keys (access no longer needed).  
- I'd recommend making a basic ssh logging system (ie with a packet sniffer that monitors traffic to your ssh port (interface should be differentiated in logs)).  
- * If your CPU/RAM/DISK is more sensitive than your NIC in saturation, avoid packet sniffers for logging.  
- Ensure you disable agent fwding.  
+ - Rotate your SSH keys often and make one per user per machine, don't share keys, and remove ghost keys (access no longer needed).  
+ - I'd recommend making a basic ssh logging system (ie with a packet sniffer that monitors traffic to your ssh port (interface should be differentiated in logs)).     
+   * If your CPU/RAM/DISK is more sensitive than your NIC in saturation, avoid packet sniffers for logging.    
+ -  Ensure you disable agent fwding.  
+```
   Disable agent forwarding   
-  AllowAgentForwarding no  
- Make "break-glass" access through some way in an emergency. Make sure it is one time use and secure, only accessible (quickly, though) to people who you trust.
+  AllowAgentForwarding no
+```
+ - Make "break-glass" access through some way in an emergency. Make sure it is one time use and secure, only accessible (quickly, though) to people who you trust.
 
 4. Software Security   
  Ensure you remain up to date with apt update and apt-get upgrade (or yum, depending on OS).  
