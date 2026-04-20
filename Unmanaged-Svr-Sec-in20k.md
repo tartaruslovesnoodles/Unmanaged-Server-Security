@@ -8,6 +8,8 @@ This guide does not claim absolute protection against groups with near unlimited
 
 CURRENT ISSUES: Indentation & Formatting. I plan to fix this over the next few days. Sadly, Github seems to have some form of an altered markdown file format. So I'm fighting it while trying to reformat a new way of indenting. The content is largely the same, though there is simply no way to determine a point from a 'subpoint' throughout the document.   
 
+
+
 0. Basic Checklist/Golden Path aka tl;dr (re-read this whenever you set up new servers if you follow this guide).  
  A. Confirm out-of-band access.  
  B. Test rollback/snapshot if present (highly recommended for most applications).  
@@ -85,6 +87,9 @@ Running Locally(WAN)
    - Security key, TPM-backed SSH, or Secure Enclave. A sec key/smartcard, like from Yubikey or FIDO2 would be the best choice in my opinion.
 
 -more coming soon  
+
+
+
  
 
 2. Operating System  
@@ -100,6 +105,9 @@ Running Locally(WAN)
   * IF srvc =! required to run server's purpose: shouldn't be installed.  
  
 -more coming soon
+
+
+
 
 
 
@@ -146,42 +154,46 @@ Running Locally(WAN)
 ```
  - Make "break-glass" access through some way in an emergency. Make sure it is one time use and secure, only accessible (quickly, though) to people who you trust.
 
+
 4. Software Security   
- Ensure you remain up to date with apt update and apt-get upgrade (or yum, depending on OS).  
-  For Debian/Ubuntu, unattended-upgrades is useful. For RHEL, dnf-automatic is useful in this regard.  
- Remove unused packages with apt autoremove and systemctl disable <>  
- Install monitoring software like tcpdump to spot leaks or issues earlier.  
- Always look for customizability choices in any given software's documentation (for example, openvpn lets you do a great deal of customization in certificates, encryption, and redundancy).  
- Keep dependencies updated and pin versions, along with regular audits.  
-  * To clarify, I mean you should ensure dependencies don't auto update, but you should auto update security updates when applicable (typically OS related) and pin with alerts for updates from a software when you cant isolate security updates.  
- Log...and log a lot...AND ROTATE THEM.  
-  Explore remote systlog/log shipping.  
-  Hackers will clear any logs they can manipulate, consider this aspect.  
- Jail/Chroot srvcs whenever possible.  
- Time sync will need some work: NTP, chrony, systemd-timesyncd, etc for logs, auth, etc.  
- DDoS Protection is a piece of software security I'll need to go deeper into:   
- First things first, you want to make sure your firewall follows the logic of whitelisting what you need and dropping everything else.   
- A simple internal firewall with a priority system is a good first step.  
-  Ie ssh whitelist, whitelist stateful traffic, whitelist ports, anything else needing a whitelist for your service/use case, DROP INCOMING.  
- The MOST IMPORTANT piece of DDoS protection comes in one factor: upstream customizability and capability.   
-  For ex, "Placeholder ISP" can shield 400gbps+ on DDoS floods (in the short term) upstream and allow firewall customization for rules applied before they reach your NIC (upstream).  
- Assuming you have some type of upstream DDoS firewall with customization, the most important next step is blocking "filtering based DoS attacks":  
-  Attackers will attempt to exploit your upstream firewall based on its infrastructure. A good way to hinder their research on said datacenter can be to register your own IP block with ARIN.  
+ - Ensure you remain up to date with apt update and apt-get upgrade (or yum, depending on OS).  
+  A. For Debian/Ubuntu, unattended-upgrades is useful. For RHEL, dnf-automatic is useful in this regard.  
+ - Remove unused packages with apt autoremove and systemctl disable <>  
+ - Install monitoring software like tcpdump (network traffic monitor) to spot leaks or issues earlier.  
+ - Always look for customizability choices in any given software's documentation (for example, openvpn lets you do a great deal of customization in certificates, encryption, and redundancy).  
+ - Keep dependencies updated (manually) and pin versions, along with regular audits.  
+   * To clarify, I mean you should ensure dependencies don't auto update, but you should auto update security updates when applicable (typically OS related) and pin with alerts for updates from a software when you cant isolate security updates.  
+ - Log...and log a lot...AND ROTATE THEM.  
+  A. Explore remote systlog/log shipping.  
+  B. Hackers will clear any logs they can manipulate, consider this aspect.  
+ - Jail/Chroot srvcs whenever possible.  
+ - Time sync will need some work on most default setups: NTP, chrony, systemd-timesyncd, etc for logs, auth, etc.  
+ - DDoS Protection is a piece of software security I'll need to go deeper into:   
+ A. First things first, you want to make sure your firewall follows the logic of whitelisting what you need and dropping everything else.   
+ B. A simple internal firewall with a priority system is a good first step: Ie ssh whitelist, whitelist stateful traffic, whitelist ports, anything else needing a whitelist for your service/use case, DROP INCOMING.  
+ C. The MOST IMPORTANT piece of DDoS protection comes in one factor: upstream customizability and capability: For ex, "Placeholder ISP" can shield 400gbps+ on DDoS floods (in the short term) upstream and allow firewall customization for rules applied before they reach your NIC (upstream).  
+ D. Assuming you have some type of upstream DDoS firewall with customization, the most important next step is blocking "filtering based DoS attacks":  
+ E. Attackers will attempt to exploit your upstream firewall based on its infrastructure. A good way to hinder their research on said datacenter can be to register your own IP block with ARIN.  
    * Note: This option has its own downsides/issues and it isn't a guarantee: DNS analysis, helpdesk social engineering/bribing, etc.  
-   Filtering attacks often hinge on poor whitelisting policies, routing, and or a lack of redundancy relative to your infrastructure:  
-    Use the server's default dns resolvers (resolv.conf) to avoid dns reflection floods against a stateless upstream filtering infrastructure. Floods reflected off an "external dns"'s IP range (ie Google) can cause an upstream firewall to overfilter (drop your dns).  
-    Base IP routing on your upstream filtering weak points (where they drop legitimate traffic or fail to filter). If they struggle with SYN for example, route with failovers and or with UDP being separated.  
-    Most firewall systems apply filters per IP. Use this to make a failover system, with the service(s) getting an IP pool from some egress points.  
-   Load balancing is another important factor: IPs, concurrent services running, disk writing, etc should all have contingencies for null routing/blackholing or migration of traffic.  
-   Though mentioned above, I'd like to specify IPs here, say you have 30 IPv4 addresses on a 1gb NIC, you could be flooded by a mere 33.3mbps to each IP (roughly 1000 to 5000 pps). It is vital to keep your internal rules not 'per-ip', then with a firewall privy to 'spread out' floods.  
- Lock app dependencies to prevent catastrophic updates interfering with your 'security profile'.  
- Sandbox systemd or Linux Namespaces.  
+   - Filtering attacks often hinge on poor whitelisting policies, routing, and or a lack of redundancy relative to your infrastructure:  
+    - Use the server's default dns resolvers (resolv.conf) to avoid dns reflection floods against a stateless upstream filtering infrastructure. Floods reflected off an "external dns"'s IP range (ie Google) can cause an upstream firewall to overfilter (drop your dns).  
+
+
+F. Base IP routing on your upstream filtering weak points (where they drop legitimate traffic or fail to filter). If they struggle with SYN for example, route with failovers and or with UDP being separated.     
+    - Most firewall systems apply filters per IP. Use this to make a failover system via null routing upstream, with the service(s) getting an IP pool from some egress points.
+
+
+G. Load balancing is another important factor: IPs, concurrent services running, disk writing, etc should all have contingencies for null routing/blackholing or migration of traffic.  
+    * Though mentioned above, I'd like to specify IPs here, say you have 30 IPv4 addresses on a 1gb NIC, you could be flooded by a mere 33.3mbps to each IP (roughly 1000 to 5000 pps). It is vital to keep your internal rules not 'per-ip', then with a firewall privy to 'spread out' floods.  
+- Lock app dependencies to prevent catastrophic updates interfering with your 'security profile'.  
+- Sandbox systemd or Linux Namespaces.  
   * This can break apps, check this first before disabling other security measures or troubleshooting.  
-  Systemd can apply primitives: namespaces, mount protections, cgroups, capability bounding, seccomp, syscall filtering, etc.  
-  Sandboxing often restricts: file sys writes, access to certain paths, divide nodes, creation/privileges, allowable syscalls, and or 'network family hygiene'. These are the failure points.  
-  Start with a baseline with the service running as a non-root user before sandboxing.  
-  Run "systemd-analyze security [yourservice.service]" for insight.    
-  Begin adding constraints and look for errors.  
+  A. Systemd can apply primitives: namespaces, mount protections, cgroups, capability bounding, seccomp, syscall filtering, etc.  
+  B. Sandboxing often restricts: file sys writes, access to certain paths, divide nodes, creation/privileges, allowable syscalls, and or 'network family hygiene'. These are the failure points.  
+  C. Start with a baseline with the service running as a non-root user before sandboxing.  
+  D. Run "systemd-analyze security [yourservice.service]" for insight.    
+  E. Begin adding constraints and look for errors.  
+  ```
    #/etc/systemd/system/service.ex.d/hardening.conf  
    [Service]  
    NoNewPrivileges=yes  
@@ -191,21 +203,24 @@ Running Locally(WAN)
    PrivateDevices=yes  
    LockPersonality=yes  
    MemoryDenyWriteExecute=yes  
-   RestrictSUIDSGID=yes  
-  Once it works with the basics get specific: Use capabilityboundingset=, ambientcapabilities=, systemcallfilter=, restrictnamespaces=, protectsystem=, readwritepaths= , ProtectControlGroups=yes, RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6  
- Apparmor (Ubuntu/Debian) or SELinux (RHEL) and avoid lowering/compromising security to workaround apparmor/selinux errors.   
-  Make sure to check the denial/error in logs before surmising an issue from a new patch, you don't wanna chase ghosts.  
-  Realistically only disable your mandatory access control if debugging/troubleshooting.  
- Having multiple IPs yields several benefits so long as they're setup correctly.  
-  Assign externally exposed services to dedicated IPs or its own egress pool if it can be done.  
-   Things like SSH and a web server for example, should be on different IPs.  
-  Optimize to null route (upstream, if an option) per IP to maximize redundancy in an attack.  
-  Use good DNS hygiene: don't use any unnecessary DNS records that associate services together.   
-   For example the reverse dns of a VPN shouldn't be the same as its admin access IP.  
-  Apply filtering policies specific to each IP  
-   Drop any protocol that the service the IP 'runs' doesn't use.   
-  Load balancing rules for attacks spread over multiple IPs.  
-  Carefully monitor and control how traffic moves between these IPs and or interfaces.   
+   RestrictSUIDSGID=yes
+  ```
+  F. Once it works with the basics get specific: Use capabilityboundingset=, ambientcapabilities=, systemcallfilter=, restrictnamespaces=, protectsystem=, readwritepaths= , ProtectControlGroups=yes, RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6  
+ - Apparmor (Ubuntu/Debian) or SELinux (RHEL) and avoid lowering/compromising security to workaround apparmor/selinux errors.   
+  A. Make sure to check the denial/error in logs before surmising an issue from a new patch, you don't wanna chase ghosts.  
+  B. Realistically only disable your mandatory access control if debugging/troubleshooting.  
+ - Having multiple IPs yields several benefits so long as they're setup correctly.  
+  A. Assign externally exposed services to dedicated IPs or its own egress pool if it can be done.  
+    * Things like SSH and a web server for example, should be on different IPs.
+ 
+  B. Optimize to null route (upstream, if an option) per IP to maximize redundancy in an attack.  
+  C. Use good DNS hygiene: don't use any unnecessary DNS records that associate services together.   
+   * For example the reverse dns of a commerical VPN shouldn't be its control plane's API or something.
+
+  
+  D. Apply filtering policies specific to each IP: drop any protocol that the service the IP 'runs' doesn't use.   
+  E. Load balancing rules for attacks spread over multiple IPs.  
+  F. Carefully monitor and control how traffic moves between these IPs and or interfaces.   
     
 5. Ongoing Maintenance/Lifecycle   
  Security updates should be automatic, as stated previously.  
