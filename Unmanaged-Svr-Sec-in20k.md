@@ -3,17 +3,18 @@
 
 Unmanaged server within this document's context refers to servers you purchase that come with largely unmodified and default permissions, with you (end user) getting full root access. That is to say the ISP doesn't manage it or run the service for you.    
 
-The expected threat model throughout this is a medium/typical to high threat environment. It addresses opportunistic attacks (automated scanning, known vuln attempts on a target list, any other "blind" attack) and well-resourced adversaries/targeted attacks (targeting your infrastructure intentionally).   
+The expected threat model throughout this is a medium/typical to high threat environment. It addresses opportunistic attacks (automated scanning, known vuln attempts on a target list, any other "blind" attack) and well-resourced adversaries/targeted attacks (targeting your infrastructure intentionally).     
+
 This guide does not claim absolute protection against groups with near unlimited resources, lawful coercive/control powers, or zero-days for every app on Earth. It focuses on raising cost, reducing attack vectors, and sectioning off damage while also providing some reactive actions once something has happened.
+                                
 
-CURRENT ISSUES: Indentation & Formatting. I plan to fix this over the next few days. Sadly, Github seems to have some form of an altered markdown file format. So I'm fighting it while trying to reformat a new way of indenting. The content is largely the same, though there is simply no way to determine a point from a 'subpoint' throughout the document.   
+0 - Basic Checklist/Golden Path aka tl;dr (re-read this whenever you set up new servers if you follow this guide).  
 
 
-
-0. Basic Checklist/Golden Path aka tl;dr (re-read this whenever you set up new servers if you follow this guide).  
  A. Confirm out-of-band access.  
  B. Test rollback/snapshot if present (highly recommended for most applications).  
-  * Can represent a security risk if it isn't encrypted and secure. Some redundant data plane servers may be better off without snapshots if it's on rented hardware.    
+  * Can represent a security risk if it isn't encrypted and secure. Some redundant data plane servers may be better off without snapshots if it's on rented hardware.
+
  C. Store your backups outside the renting ISP (if applicable) or off-host.  
  D. Install a minimal and supported Linux OS (check out section 2 on OS, it is short), headless if you only plan to use the cli.  
  E. Update the system immediately upon deployment.  
@@ -26,10 +27,12 @@ CURRENT ISSUES: Indentation & Formatting. I plan to fix this over the next few d
  L. Rotate logs and do remote log shipping if possible.   
  M. Enable automatic security updates.  
  N. Monitor auth, disk, cpu, ram, and nic saturation.  
- 
-1. Network/Env Concerns   
+
+
+1 - Network/Env Concerns
+
 - Confirm out of band access (kvm, rescue boot, console, etc).   
-- Confirm a rollback path (ie snapshot/backup and test a restore) and secure offsite storage.            
+- Confirm a rollback path (i.e. snapshot/backup and test a restore) and secure offsite storage.            
  A. Recovery is primarily for the control plane or the server that holds referenced files and communicates through the network. For data plane or servers that primarily fetch and transmit data, snapshots aren't needed and may be a security detriment in some cases.    
 - Find out how you receive alerts for server issues and who sends them.   
 - Decide where "secrets" will live at this stage, do NOT budge for convenience. Find work arounds and only disregard if a security risk presents itself.   
@@ -43,10 +46,10 @@ CURRENT ISSUES: Indentation & Formatting. I plan to fix this over the next few d
  Rented Servers      
   A. Decide on what you value in a server before browsing ISPs: CPU, parallel processing(GPU), port speed, RAM, DoS protection, customizability, scalability, upstream capabilities, stateless vs stateful network, null route policy, datacenter backbone, etc.  
   B. Look at the 'top 20' hosts (do NOT rely on "top #n Dedicated Server Hosts" articles, these are often sponsored, look around and talk to devs instead). As of Jan 2026 (take w/ more salt the more years pass), a few solid choices are Datapacket, OVH, Hetzner, VOX, and IBM).  
-  C. Know your host -- Research them extensively for limits and perks (ie from A).   
-  D. Dedicated servers are ideal for security, using a VM (often called VPS/VDS) from rented hosts opens up vulnerabilities you can't control/patch, for instance VM escapes.   
-  E. Utilize the host's upstream firewall if present to filter sensitive ports (ie ssh) before packets reach your server, this can block port scans (soley dropping/rejecting locally to a port still gets scanned).  
-  F. Investigate privacy policies, data sales, and EULA carefully.  
+  C. Know your host -- Research them extensively for limits and perks ( from A).   
+  D. Dedicated servers are ideal for security, using a VM (often called VPS/VDS) from rented hosts opens up vulnerabilits you can't control/patch, for instance VM escapes.   
+  E. Utilize the host's upstream firewall if present to filter sensitive ports ( ssh) before packets reach your server, this can block port scans (soley dropping/rejecting locally to a port still gets scanned).  
+  F. Investigate privacy polics, data sales, and EULA carefully.  
   G. If you have a network composed of servers from multiple hosts, consider using different emails and account credentials/verification methods to minimize spread against panel-access compromise attacks.  
   H. An encrypted disk is an option for rented servers but I wouldn't recommend it despite its potential security benefits. It is near mandatory with minimal downside for other types of deployment (not rented).  
   * Theft is a possibility with rented servers, you have very little control over the security level and who can access your server in a datacenter you don't own: If the sec of the ISP looks bad, encrypt  (…and maybe go to a different ISP).                                         
@@ -81,7 +84,7 @@ Running Locally(WAN)
   E. Split DNS and don't leak internal names.  
   F. Router hardening is most relevant for this type of server deployment.  
   G. Without purchasing an IP block from ARIN/RIPE your reputation will likely be variable   
-  H. Use reverse proxies or edge relays when possible to hide your IP.  
+  H. Use reverse proxs or edge relays when possible to hide your IP.  
   I. WAF/CDN if applicable.  
   J. Hardware backed ssh.  
    - Security key, TPM-backed SSH, or Secure Enclave. A sec key/smartcard, like from Yubikey or FIDO2 would be the best choice in my opinion.
@@ -92,7 +95,8 @@ Running Locally(WAN)
 
  
 
-2. Operating System  
+2 - Operating System  
+
  Pick an operating system that is trusted, high support with your hardware arch, new (version), and secure:  
   A. Ubuntu  
   B. Debian  
@@ -103,15 +107,10 @@ Running Locally(WAN)
  B.  LTS may be ideal if you intend to "run and forget" a server for a long time (1 year+).  
  C.  Make sure to minimize your install to base unless explicitly needed, this adds unnecessary attack surface area.           
   * IF srvc =! required to run server's purpose: shouldn't be installed.  
- 
--more coming soon
 
 
+3 - SSH Setup  
 
-
-
-
-3. SSH Setup  
  Create an SSH key to replace your password (general sys advice below):  
   Use modern key types:  
 ```
@@ -125,7 +124,7 @@ Running Locally(WAN)
   PasswordAuthentication no  
   PubkeyAuthentication yes  
   PermitRootLogin no  
-  MaxAuthTries 6 #Many people can lower this, but those with employees may need more tries, this is a catch all. The security risk of high try counts is minimal so long as your server is setup properly.  
+  MaxAuthTrs 6 #Many people can lower this, but those with employees may need more trs, this is a catch all. The security risk of high try counts is minimal so long as your server is setup properly.  
   LoginGraceTime 15 #15 seconds to login, since you should be logging in near instantly, holding it longer makes unnecessary concurrent TCP connections in the event of an attack.  
   AllowUsers user1 user2 #(or AllowGroups ssh).  
   X11Forwarding no  
@@ -145,7 +144,7 @@ Running Locally(WAN)
 - Some people may suggest you should add a rate limit to your ssh port, this does increase security but can be used by bad actors to DoS your ssh port (can't use the srvc).    
   * I would personally recommend doing a rate limit on a per linux user and or IP address basis. If not, a rate limit can often be counterproductive.  
  - Rotate your SSH keys often and make one per user per machine, don't share keys, and remove ghost keys (access no longer needed).  
- - I'd recommend making a basic ssh logging system (ie with a packet sniffer that monitors traffic to your ssh port (interface should be differentiated in logs)).     
+ - I'd recommend making a basic ssh logging system (i.e. with a packet sniffer that monitors traffic to your ssh port (interface should be differentiated in logs)).     
    * If your CPU/RAM/DISK is more sensitive than your NIC in saturation, avoid packet sniffers for logging.    
  -  Ensure you disable agent fwding.  
 ```
@@ -155,23 +154,24 @@ Running Locally(WAN)
  - Make "break-glass" access through some way in an emergency. Make sure it is one time use and secure, only accessible (quickly, though) to people who you trust.
 
 
-4. Software Security   
+4 - Software Security   
+
  - Ensure you remain up to date with apt update and apt-get upgrade (or yum, depending on OS).  
   A. For Debian/Ubuntu, unattended-upgrades is useful. For RHEL, dnf-automatic is useful in this regard.  
  - Remove unused packages with apt autoremove and systemctl disable <>  
- - Install monitoring software like tcpdump (network traffic monitor) to spot leaks or issues earlier.  
+ - Install monitoring software like tcpdump (network traffic monitor) to spot leaks or issues earlr.  
  - Always look for customizability choices in any given software's documentation (for example, openvpn lets you do a great deal of customization in certificates, encryption, and redundancy).  
- - Keep dependencies updated (manually) and pin versions, along with regular audits.  
-   * To clarify, I mean you should ensure dependencies don't auto update, but you should auto update security updates when applicable (typically OS related) and pin with alerts for updates from a software when you cant isolate security updates.  
+ - Keep dependencs updated (manually) and pin versions, along with regular audits.  
+   * To clarify, I mean you should ensure dependencs don't auto update, but you should auto update security updates when applicable (typically OS related) and pin with alerts for updates from a software when you can't isolate security updates.  
  - Log...and log a lot...AND ROTATE THEM.  
   A. Explore remote systlog/log shipping.  
   B. Hackers will clear any logs they can manipulate, consider this aspect.  
  - Jail/Chroot srvcs whenever possible.  
  - Time sync will need some work on most default setups: NTP, chrony, systemd-timesyncd, etc for logs, auth, etc.  
- - DDoS Protection is a piece of software security I'll need to go deeper into:   
+ - DDoS Protection is a pce of software security I'll need to go deeper into:   
  A. First things first, you want to make sure your firewall follows the logic of whitelisting what you need and dropping everything else.   
- B. A simple internal firewall with a priority system is a good first step: Ie ssh whitelist, whitelist stateful traffic, whitelist ports, anything else needing a whitelist for your service/use case, DROP INCOMING.  
- C. The MOST IMPORTANT piece of DDoS protection comes in one factor: upstream customizability and capability: For ex, "Placeholder ISP" can shield 400gbps+ on DDoS floods (in the short term) upstream and allow firewall customization for rules applied before they reach your NIC (upstream).  
+ B. A simple internal firewall with a priority system is a good first step:  ssh whitelist, whitelist stateful traffic, whitelist ports, anything else needing a whitelist for your service/use case, DROP INCOMING.  
+ C. The MOST IMPORTANT pce of DDoS protection comes in one factor: upstream customizability and capability: For ex, "Placeholder ISP" can shld 400gbps+ on DDoS floods (in the short term) upstream and allow firewall customization for rules appld before they reach your NIC (upstream).  
  D. Assuming you have some type of upstream DDoS firewall with customization, the most important next step is blocking "filtering based DoS attacks":  
  E. Attackers will attempt to exploit your upstream firewall based on its infrastructure. A good way to hinder their research on said datacenter can be to register your own IP block with ARIN.  
    * Note: This option has its own downsides/issues and it isn't a guarantee: DNS analysis, helpdesk social engineering/bribing, etc.  
@@ -188,12 +188,14 @@ G. Load balancing is another important factor: IPs, concurrent services running,
 - Lock app dependencies to prevent catastrophic updates interfering with your 'security profile'.  
 - Sandbox systemd or Linux Namespaces.  
   * This can break apps, check this first before disabling other security measures or troubleshooting.  
+  
   A. Systemd can apply primitives: namespaces, mount protections, cgroups, capability bounding, seccomp, syscall filtering, etc.  
   B. Sandboxing often restricts: file sys writes, access to certain paths, divide nodes, creation/privileges, allowable syscalls, and or 'network family hygiene'. These are the failure points.  
   C. Start with a baseline with the service running as a non-root user before sandboxing.  
   D. Run "systemd-analyze security [yourservice.service]" for insight.    
   E. Begin adding constraints and look for errors.  
-  ```
+
+   ```
    #/etc/systemd/system/service.ex.d/hardening.conf  
    [Service]  
    NoNewPrivileges=yes  
@@ -205,7 +207,8 @@ G. Load balancing is another important factor: IPs, concurrent services running,
    MemoryDenyWriteExecute=yes  
    RestrictSUIDSGID=yes
   ```
-  F. Once it works with the basics get specific: Use capabilityboundingset=, ambientcapabilities=, systemcallfilter=, restrictnamespaces=, protectsystem=, readwritepaths= , ProtectControlGroups=yes, RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6  
+
+F. Once it works with the basics get specific: Use capabilityboundingset=, ambientcapabilities=, systemcallfilter=, restrictnamespaces=, protectsystem=, readwritepaths= , ProtectControlGroups=yes, RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6  
  - Apparmor (Ubuntu/Debian) or SELinux (RHEL) and avoid lowering/compromising security to workaround apparmor/selinux errors.   
   A. Make sure to check the denial/error in logs before surmising an issue from a new patch, you don't wanna chase ghosts.  
   B. Realistically only disable your mandatory access control if debugging/troubleshooting.  
@@ -215,48 +218,51 @@ G. Load balancing is another important factor: IPs, concurrent services running,
  
   B. Optimize to null route (upstream, if an option) per IP to maximize redundancy in an attack.  
   C. Use good DNS hygiene: don't use any unnecessary DNS records that associate services together.   
-   * For example the reverse dns of a commerical VPN shouldn't be its control plane's API or something.
+   * For example the reverse dns of a commercial VPN shouldn't be its control plane's API or something.
 
   
   D. Apply filtering policies specific to each IP: drop any protocol that the service the IP 'runs' doesn't use.   
   E. Load balancing rules for attacks spread over multiple IPs.  
   F. Carefully monitor and control how traffic moves between these IPs and or interfaces.   
     
-5. Ongoing Maintenance/Lifecycle   
- Security updates should be automatic, as stated previously.  
- Schedule non-security updates weekly/monthly (don't do auto update, though)  
- Log update outcomes (failed auto upgrades or reboot-required state).  
- Track kernel EOL AND OS EOL, make sure you don't just assume it is the same.  
- Emergency Path protocol.  
-  You (and employees, if you have them) need to know what to do (your protocol) when something happens: ssh drops a cve, unauthorized access, actively under attack, etc.  
- Plan for deterioration relative to the rest of cyber security: crypto algs, tls version, ssh key types, file systems, init systems, etc.  
- Log any manual change.  
- Define log retention windows.  
-  local logs should be short but remote ones can be longer.  
- Ensure log integrity (ie who can append and at what stage?).  
- Schedule "check in" days for servers or a set of them.   
- Classify your backup data and put it somewhere safe.  
- Have alerts set if any monitoring software goes down (monitor monitoring software).  
- Incident readiness, same as emergency path protocol but more broad, naturally. Don't let uncertainty or panic motivate you. The written text is in a much calmer mental state that is forward thinking and pragmatic, rely on it for anything preparable, this scales exponentially with employees.  
- If you're renting or have upstream dependencies, ensure you're checking your email and have all notifications on for them.  
- Disk handling/discardment.  
-  Depending on your use case, this can vary.   
-  A simple and free solution is to do a double pass over, writing over the disk twice. Advanced forensics can recover this method, though.  
-  Destruction of disks supervised by you after multiple write overs on the disk.  
-   Paradoxically can be more expensive to do it well then to just send it in somewhere due to the stuff needed to actually destroy the data.   
-  Certified Data Destruction from a third party after doing your pass overs.  
-    
-6. Misc  
- Depending on priority and budget, ordering pen testing (after performing your own exhaustive pen test, of course) can give clients confidence and lower risk substantially.   
- Infrastructure scaling should ideally partition services/components to a whole, specific server or VM when possible. This segments attacks and is more friendly with scalability.
- This is the end, but the most important thing in security is knowing you don't know everything. No guide can cover every exploit and no one can retain what they read perfectly. So it is important to always challenge assumptions, ask questions, be informed, and stay vigilant. Thank you for taking time to read my manpage on unmanaged servers.
+5 - Ongoing Maintenance/Lifecycle   
 
- Threat Modeling and Attack Analysis  
-  These two are useful tools once you've got your server setup and are ready to run and perform whatever operation the server is made for.  
-  At the most basic level, these concepts are intuitive: threat modeling is spotting threats and theories about weak points, and attack surface analysis simply sees what can be attacked.  
-  Dataflow diagrams are useful tools for both of these to map trust boundaries and how traffic routes throughout the system.  
-  Many articles exist on these two topics; I'd recommend reading some or watching videos on these whenever you find the time.    
-  
+- Security updates should be automatic, as stated previously.  
+- Schedule non-security updates weekly/monthly (don't do auto update, though). 
+- Log update outcomes (failed auto upgrades or reboot-required state).
+- Track kernel EOL AND OS EOL, make sure you don't just assume it is the same.  
+- Emergency Path protocol: you (and employees, if you have them) need to know what to do (your protocol) when something happens: ssh drops a cve, unauthorized access, actively under attack, etc.  
+- Plan for deterioration relative to the rest of cyber security: crypto algs, tls version, ssh key types, file systems, init systems, etc.    
+- Log any manual change.  
+- Define log retention windows.  
+- Local logs should be short but remote ones can be longer.  
+- Ensure log integrity (ie who can append and at what stage?).  
+- Schedule "check in" days for servers or a set of them.   
+- Classify your backup data and put it somewhere safe.  
+- Have alerts set if any monitoring software goes down (monitor monitoring software).  
+- Incident readiness, same as emergency path protocol but more broad, naturally. Don't let uncertainty or panic motivate you. The written text is in a much calmer mental state that is forward thinking and pragmatic, rely on it for anything preparable, this scales exponentially with employees.   
+- If you're renting or have upstream dependencies, ensure you're checking your email and have all notifications on for them.  
+- Disk handling/discardment.
+
+A. Depending on your use case, this can vary.   
+B. A simple and free solution is to do a double pass over, writing over the disk twice. Advanced forensics can recover this method, though.  
+C. Destruction of disks supervised by you after multiple write overs on the disk.  
+   * Paradoxically can be more expensive to do it well than to just send it in somewhere due to the stuff needed to actually destroy the data.                                             
+
+D. Certified Data Destruction from a third party after doing your pass overs.  
+
+
+6 - Misc  
+- Depending on priority and budget, ordering pen testing (after performing your own exhaustive pen test, of course) can give clients confidence and lower risk substantially.   
+- Infrastructure scaling should ideally partition services/components to a whole, specific server or VM when possible. This segments attacks and is more friendly with scalability.
+
+- Threat Modeling and Attack Analysis  
+  A. These two are useful tools once you've got your server setup and are ready to run and perform whatever operation the server is made for.              
+  B. At the most basic level, these concepts are intuitive: threat modeling is spotting threats and theories about weak points, and attack surface analysis simply sees what can be attacked.      
+  C. Dataflow diagrams are useful tools for both of these to map trust boundaries and how traffic routes throughout the system.    
+  D. Many articles exist on these two topics; I'd recommend reading some or watching videos on these whenever you find the time.       
+ 
+ -  This is the end, but the most important thing in security is knowing you don't know everything. No guide can cover every exploit and no one can retain what they read perfectly. So it is important to always challenge assumptions, ask questions, be informed, and stay vigilant. Thank you for taking time to read my manpage on unmanaged servers.   
  - MORE COMING TO THIS SECTION/TBD     
 
 
