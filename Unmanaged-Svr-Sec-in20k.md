@@ -106,8 +106,262 @@ Running Locally(WAN)
  A. May also want to mark EoLs of your chosen OS versions if you plan to run a server for multiple years.    
  B.  LTS may be ideal if you intend to "run and forget" a server for a long time (1 year+).  
  C.  Make sure to minimize your install to base unless explicitly needed, this adds unnecessary attack surface area.           
-  * IF srvc =! required to run server's purpose: shouldn't be installed.  
+  * IF srvc =! required to run server's purpose: shouldn't be installed.   
 
+- https://messervices.cyber.gouv.fr/documents-guides/linux_configuration-en-v2.pdf is a dense and hollistic source for linux OSes and ideal configuration from 2022, if you want to further your OS knowledge.
+
+ - Use principle of least privilege (polp)   
+A. polp states every user/system/service gets the minimum access needed to complete the job.    
+B. Many portions of polp require a superuser at first to set things up, then shifts into a usr/srvc with less permissions. For example in a database you may start with postgres as the user but then your admin account is restricted to basic maintenance, and an even lower permission account for the database API account/role.                                                    
+C. In a way polp is common sense, but many people will get mad at a finicky program and chmod 777 it. But that is exactly how you can easily break the basic principle and put yourself at risk.   
+
+ - 'Defense in depth' principle states you should have multiple security controls across the entire system. So instead of having just a firewall or OS hardening, you have both of those, input validation on application layer, auth, encryption, MFA, monitoring, logging, security policies, intrusion detection, segmentation, proxies, etc.   
+ - Bootloaders must be secured if you don't have a rented/cloud provider or a specific OS 'doing it for you'.   
+A. Bootloaders are services/programs that run at the launch of a machine in a sort of 'partitioned sandbox'. They contain (or can have added to them) file system access control, boot options (ie external boot), bypasses of your security points, etc.   
+B. Activation of IOMMU on the bootloader protects against arbitrary memory access.        
+C. ```[...]=full,force``` can be used to enable all mitigations and lock them in place: for example l1tf=full,force for Intel's L1 Terminal Fault Vuln.   
+D. Add these to your bootloader. They fill free pages until use, force PTI, increase difficulty in heap overflow cyberattacks, and block specific attack patterns respectively.    
+```
+page_poison=on
+pti = on
+slab_nomerge=yes
+slub_debug=FZP
+spectre_v2=on
+mds=full,nosmt
+mce=0
+page_alloc.shuffle=1
+rng_core.default_quality=500
+```
+E. General settings to add to your bootloader (ANSSI Guidelines):    
+```
+# Restrict access to the dmesg buffer (equivalent to
+# CONFIG_SECURITY_DMESG_RESTRICT=y)
+kernel.dmesg_restrict=1
+# Hide kernel addresses in /proc and various other interfaces ,
+# including from privileged users
+kernel.kptr_restrict=2
+# Explicitly specify the process id space supported by the kernel ,
+# 65536 being an example value
+kernel.pid_max=65536
+# Restrict the use of the perf subsystem
+kernel.perf_cpu_time_max_percent=1
+kernel.perf_event_max_sample_rate=1
+# Prohibit unprivileged access to the perf_event_open () system call.
+# With a value greater than 2, we impose the possession of
+# CAP_SYS_ADMIN , in order to collect the perf events.
+kernel.perf_event_paranoid=2
+# Activate ASLR
+kernel.randomize_va_space=2
+# Disable Magic System Request Key combinations
+kernel.sysrq=0
+# Restrict kernel BPF usage to privileged users
+kernel.unprivileged_bpf_disabled=1
+# Completely shut down the system if the Linux kernel behaves
+# unexpectedly
+kernel.panic_on_oops=1
+# This option replaced CONFIG_DEBUG_RODATA in the kernel (> = 4.11)
+# which was a dependency of CONFIG_DEBUG_KERNEL
+CONFIG_STRICT_KERNEL_RWX=y
+# CONFIG_ARCH_OPTIONAL_KERNEL_RWX and
+# CONFIG_ARCH_HAS_STRICT_KERNEL_RWX are dependencies of
+# CONFIG_STRICT_KERNEL_RWX
+CONFIG_ARCH_OPTIONAL_KERNEL_RWX=y
+CONFIG_ARCH_HAS_STRICT_KERNEL_RWX=y
+# Check and report unsafe memory mapping permissions , for
+# example , when kernel pages are writable and executable.
+# This option is not available on all architectures
+# hardware (x86> = 4.4, arm64 > = 4.10, etc.).
+CONFIG_DEBUG_WX=y
+# Disable the file system used only for debugging. Protecting this file
+# system takes additional work.
+CONFIG_DEBUG_FS=n
+# Starting with kernel version 4.18, these options add
+# -fstack -protector -strong at compilation time to strengthen
+# the canary stack , it is necessary to have a version of GCC at least
+# equal to 4.9.
+# Before version 4.18 of the linux kernel , you must use the options
+# CONFIG_CC_STACKPROTECTOR and
+# CONFIG_CC_STACKPROTECTOR_STRONG
+CONFIG_STACKPROTECTOR=y
+CONFIG_STACKPROTECTOR_STRONG=y
+# Prohibits direct access to physical memory.
+# If necessary and only in this case, it is possible to activate a
+# strict access to memory , thus limiting its access , with options
+# CONFIG_STRICT_DEVMEM=y an
+# Detects stack corruption during the call to the scheduler
+CONFIG_SCHED_STACK_END_CHECK=y
+# Impose a check of the limits of the memory mapping of the process
+# at the time of data copies.
+CONFIG_HARDENED_USERCOPY=y
+# Forbid the return to a verification of the mapping with the allocator if
+# the previous option failed.
+#CONFIG_HARDENED_USERCOPY_FALLBACK is not set
+# Added cover pages between kernel stacks. This protects against the effects
+# of edge of stack overflows (this option is not supported on all
+# architectures).
+CONFIG_VMAP_STACK=y
+# Impose exhaustive checks on kernel reference counters (<=5.4)
+CONFIG_REFCOUNT_FULL=y
+# Check the memory copy actions that could cause corruption
+# of structure in the kernel functions str*() and mem*(). This verification is
+# performed at compile time and at runtime.
+CONFIG_FORTIFY_SOURCE=y
+# Disable the dangerous use of ACPI, which can lead to direct writing
+# in physical memory.
+#CONFIG_ACPI_CUSTOM_METHOD is not set
+# Prohibit direct access to kernel memory from userspace (<=5.12)
+#CONFIG_DEVKMEM is not set
+# Prohibits provision of kernel image layout
+#CONFIG_PROC_KCORE is not set
+# Disable VDSO backward compatibility , which makes it impossible
+# to use ASLR
+#CONFIG_COMPAT_VDSO is not set
+# Prevent unprivileged users from retrieving kernel addresses
+# with dmesg (8)
+CONFIG_SECURITY_DMESG_RESTRICT=y
+# Activate retpolines which are necessary to protect yourself from Spectre v2
+# GCC> = 7.3.0 is required.
+CONFIG_RETPOLINE=y
+# Disable the vsyscall table. It is no longer required by libc and is a
+# potential source of ROP gadgets.
+CONFIG_LEGACY_VSYSCALL_NONE=y
+CONFIG_LEGACY_VSYSCALL_EMULATE=n
+CONFIG_LEGACY_VSYSCALL_XONLY=n
+CONFIG_X86_VSYSCALL_EMULATION=n
+# Check the authorisation data structures
+CONFIG_DEBUG_CREDENTIALS=y
+# Check the notifications data structures
+CONFIG_DEBUG_NOTIFIERS=y
+# Check kernel lists
+CONFIG_DEBUG_LIST=y
+# Check the kernel Scatter -Gather tables.
+CONFIG_DEBUG_SG=y
+# Generate a call to BUG() if corruption is detected.
+CONFIG_BUG_ON_DATA_CORRUPTION=y
+# Randomly position the free block chaining information of the allocator.
+CONFIG_SLAB_FREELIST_RANDOM=y
+# CONFIG_SLAB is a dependency of CONFIG_SLAB_FREELIST_RANDOM
+CONFIG_SLUB=y
+# Protects integrity of the allocator 's metadata.
+CONFIG_SLAB_FREELIST_HARDENED=y
+# Starting with kernel version 4.13, this option disables the merge of
+# SLAB caches
+CONFIG_SLAB_MERGE_DEFAULT=n
+# Activates the checking of the memory allocator structures and resets
+# to zero the zones allocated when they are released (requires the
+# activation of the page_poison=on memory configuration option
+# added to the list of kernel parameters during boot). It is better to use
+# the slub_debug memory configuration option added to the list of
+# kernel parameters during boot as it allows finer management
+# from the debug slub.
+CONFIG_SLUB_DEBUG=y
+# Clean up memory pages when they are freed.
+CONFIG_PAGE_POISONING=y
+# Deep cleaning disabled. This option comes at a significant cost;
+# however if the performance impact is compatible with the need
+# operational of the equipment , it is recommended to activate it. (<=5.10)
+CONFIG_PAGE_POISONING_NO_SANITY=y
+# The cleaning of the memory pages is carried out with a rewrite
+# of zeros in place of the data (<=5.10)
+CONFIG_PAGE_POISONING_ZERO=y
+# Disable backward compatibility with brk () which makes it impossible to
+# implementation of brk () with ASLR.
+#CONFIG_COMPAT_BRK is not set
+# Activation of module support
+CONFIG_MODULES=y
+# This option replaced CONFIG_DEBUG_SET_MODULE_RONX
+# in the kernel (> = 4.11)
+CONFIG_STRICT_MODULE_RWX=y
+# This option replaced CONFIG_DEBUG_SET_MODULE_RONX
+# in the kernel (> = 4.11)
+CONFIG_MODULE_SIG=y
+# Prevent loading modules that are unsigned or signed with a key that
+# does not belong to us.
+CONFIG_MODULE_SIG_FORCE=y
+# Activate CONFIG_MODULE_SIG_ALL allows signing all modules
+# automatically during the "make modules_install" step, without this option
+# modules must be signed manually using the script
+# scripts/sign-file. The CONFIG_MODULE_SIG_ALL option
+# depends on CONFIG_MODULE_SIG and CONFIG_MODULE_SIG_FORCE ,
+# so they must be enabled.
+CONFIG_MODULE_SIG_ALL=y
+# Module signing uses SHA512 as hash function
+CONFIG_MODULE_SIG_SHA512=y
+CONFIG_MODULE_SIG_HASH="sha512"
+# Specifies the path to the file containing both the private key and its
+# X.509 certificate in PEM format used for signing modules ,
+# relative to the root of the kernel.
+CONFIG_MODULE_SIG_KEY="certs/signing_key.pem"
+# Report on the conditions of the call to the macro kernel BUG ()
+# and kill the process that initiated the call. Not setting this variable
+# may hide a number of critical errors.
+CONFIG_BUG=y
+# Shut down the system in the event of a critical error to cut short any
+# erroneous behavior.
+CONFIG_PANIC_ON_OOPS=y
+# Prevents restarting of the machine after a panic which cuts short
+# any attempted brute force attack. This obviously has a strong impact
+# on production servers.
+CONFIG_PANIC_TIMEOUT=-1
+# Enables the ability to filter system calls made by an application.
+CONFIG_SECCOMP=y
+# Activate the possibility of using BPF (Berkeley Packet Filter) scripts.
+CONFIG_SECCOMP_FILTER=y
+# Enables Linux kernel security primitives , required for LSMs.
+CONFIG_SECURITY=y
+# Active Yama, which allows to simply limit the use of the system call
+# ptrace (). Once the security modules used by the system
+# have been selected , support for other security modules should be disabled
+# in order to reduce the attack surface.
+CONFIG_SECURITY_YAMA=y
+# Ensure kernel structures associated with LSMs are always mapped
+# read-only after system boot. In the event that SELinux is
+# used, make sure that CONFIG_SECURITY_SELINUX_DISABLE is not set,
+# for this option to be available. It is then no longer possible to
+# disable an LSM after the kernel has booted. It is however still
+# possible to do this by modifying the kernel command line. For the
+# 4.18 kernel the present LSMs are: AppArmor , LoadPin , SELinux , Smack ,
+# TOMOYO and Yama.
+#CONFIG_SECURITY_WRITABLE_HOOKS is not set
+# Enable compiler plugins support (implies the use of GCC).
+CONFIG_GCC_PLUGINS=y
+# Amplify entropy generation at equipment startup for those
+# having inappropriate entropy sources
+CONFIG_GCC_PLUGIN_LATENT_ENTROPY=y
+# Clean up the contents of the stack at the time of the exit system call.
+CONFIG_GCC_PLUGIN_STACKLEAK=y
+# Force initialization of structures in memory to avoid data leakage by
+# superimposition with an old structure.
+CONFIG_GCC_PLUGIN_STRUCTLEAK=y
+# Globalization of the previous option in the case of the passage
+# of structure by reference between functions if they have uninitialized fields
+CONFIG_GCC_PLUGIN_STRUCTLEAK_BYREF_ALL=y
+# Build a random memory map for the kernel system structures.
+# This option has a strong impact on performance. The option
+# CONFIG_GCC_PLUGIN_RANDSTRUCT_PERFORMANCE=y should be used
+# instead if this impact is not acceptable.
+CONFIG_GCC_PLUGIN_RANDSTRUCT=y
+# Used to prevent SYN flood type attacks.
+CONFIG_SYN_COOKIES=y
+# Prohibits the execution of a new kernel image after reboot.
+#CONFIG_KEXEC is not set
+# Prohibits switching to hibernation mode, which allows you to
+# substitute the image kernel without his knowledge.
+#CONFIG_HIBERNATION is not set
+# Disable arbitrary binary format support.
+#CONFIG_BINFMT_MISC is not set
+# Impose the use of modern ptys (devpts) which number and use
+# can be controlled
+#CONFIG_LEGACY_PTYS is not set
+# If module support is not absolutely necessary , it must be
+# disabled.
+#CONFIG_MODULES is not set
+```
+F. A Network config is also important for your bootloader, but it is much more based on individual use cases, so you'll have to decide yourself what direction to go.        
+G. A portion of kernel compilation options are dependent upon your arch, so this will also be left up to you.    
+H. Ensure GRUB cfg has a password.          
+I. Enable UEFI secure boot and disable external boot in firmware.     
+J. Lock GRUB.    
 
 3 - SSH Setup  
 
@@ -168,7 +422,7 @@ Running Locally(WAN)
   B. Hackers will clear any logs they can manipulate, consider this aspect.  
  - Jail/Chroot srvcs whenever possible.  
  - Time sync will need some work on most default setups: NTP, chrony, systemd-timesyncd, etc for logs, auth, etc.  
- - DDoS Protection is a pce of software security I'll need to go deeper into:   
+ - DDoS Protection is a piece of software security I'll need to go deeper into:   
  A. First things first, you want to make sure your firewall follows the logic of whitelisting what you need and dropping everything else.   
  B. A simple internal firewall with a priority system is a good first step:  ssh whitelist, whitelist stateful traffic, whitelist ports, anything else needing a whitelist for your service/use case, DROP INCOMING.  
  C. The MOST IMPORTANT pce of DDoS protection comes in one factor: upstream customizability and capability: For ex, "Placeholder ISP" can shld 400gbps+ on DDoS floods (in the short term) upstream and allow firewall customization for rules appld before they reach your NIC (upstream).  
@@ -220,11 +474,19 @@ F. Once it works with the basics get specific: Use capabilityboundingset=, ambie
   C. Use good DNS hygiene: don't use any unnecessary DNS records that associate services together.   
    * For example the reverse dns of a commercial VPN shouldn't be its control plane's API or something.
 
-  
+
+
   D. Apply filtering policies specific to each IP: drop any protocol that the service the IP 'runs' doesn't use.   
   E. Load balancing rules for attacks spread over multiple IPs.  
-  F. Carefully monitor and control how traffic moves between these IPs and or interfaces.   
-    
+  F. Carefully monitor and control how traffic moves between these IPs and or interfaces.        
+
+
+
+
+ - ```# systemctl list -units --type service``` lists all services running on a server.
+ - ```# find / -type f -perm /111 -exec getcap {} \; 2>/dev/null``` lists EXEs which have at least 1 Linux capability enabled.
+
+
 5 - Ongoing Maintenance/Lifecycle   
 
 - Security updates should be automatic, as stated previously.  
