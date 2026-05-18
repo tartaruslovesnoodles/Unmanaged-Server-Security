@@ -425,7 +425,7 @@ J. Lock GRUB.
  - DDoS Protection is a piece of software security I'll need to go deeper into:   
  A. First things first, you want to make sure your firewall follows the logic of whitelisting what you need and dropping everything else.   
  B. A simple internal firewall with a priority system is a good first step:  ssh whitelist, whitelist stateful traffic, whitelist ports, anything else needing a whitelist for your service/use case, DROP INCOMING.  
- C. The MOST IMPORTANT pce of DDoS protection comes in one factor: upstream customizability and capability: For ex, "Placeholder ISP" can shld 400gbps+ on DDoS floods (in the short term) upstream and allow firewall customization for rules appld before they reach your NIC (upstream).  
+ C. The MOST IMPORTANT piece of DDoS protection comes in one factor: upstream customizability and capability: For ex, "Placeholder ISP" can shld 400gbps+ on DDoS floods (in the short term) upstream and allow firewall customization for rules appld before they reach your NIC (upstream).  
  D. Assuming you have some type of upstream DDoS firewall with customization, the most important next step is blocking "filtering based DoS attacks":  
  E. Attackers will attempt to exploit your upstream firewall based on its infrastructure. A good way to hinder their research on said datacenter can be to register your own IP block with ARIN.  
    * Note: This option has its own downsides/issues and it isn't a guarantee: DNS analysis, helpdesk social engineering/bribing, etc.  
@@ -484,8 +484,8 @@ F. Once it works with the basics get specific: Use capabilityboundingset=, ambie
 
 
  - ```# systemctl list -units --type service``` lists all services running on a server.
- - ```# find / -type f -perm /111 -exec getcap {} \; 2>/dev/null``` lists EXEs which have at least 1 Linux capability enabled.
-
+ - ```# find / -type f -perm /111 -exec getcap {} \; 2>/dev/null``` lists EXEs which have at least 1 Linux capability enabled.     
+- I may have already said this, but it is very important that you read documentation for software you use. Preferably scaling depth in your research depending on how often you use it and how critical it is: for example if you're making an API, express.js is going to be more important to read up on than Stacer or something. You'll also dramatically increase your retention and interest if you implement(some of) the examples as you read through.   
 
 5 - Ongoing Maintenance/Lifecycle   
 
