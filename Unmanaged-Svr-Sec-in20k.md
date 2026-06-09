@@ -425,12 +425,12 @@ J. Lock GRUB.
  - DDoS Protection is a piece of software security I'll need to go deeper into:   
  A. First things first, you want to make sure your firewall follows the logic of whitelisting what you need and dropping everything else.   
  B. A simple internal firewall with a priority system is a good first step:  ssh whitelist, whitelist stateful traffic, whitelist ports, anything else needing a whitelist for your service/use case, DROP INCOMING.  
- C. The MOST IMPORTANT piece of DDoS protection comes in one factor: upstream customizability and capability: For ex, "Placeholder ISP" can shld 400gbps+ on DDoS floods (in the short term) upstream and allow firewall customization for rules appld before they reach your NIC (upstream).  
+ C. The MOST IMPORTANT piece of DDoS protection comes in one factor: upstream customizability and capability: For ex, "Placeholder ISP" can shield 400gbps+ on DDoS floods (in the short term) upstream and allow firewall customization for rules appld before they reach your NIC (upstream).  
  D. Assuming you have some type of upstream DDoS firewall with customization, the most important next step is blocking "filtering based DoS attacks":  
  E. Attackers will attempt to exploit your upstream firewall based on its infrastructure. A good way to hinder their research on said datacenter can be to register your own IP block with ARIN.  
    * Note: This option has its own downsides/issues and it isn't a guarantee: DNS analysis, helpdesk social engineering/bribing, etc.  
    - Filtering attacks often hinge on poor whitelisting policies, routing, and or a lack of redundancy relative to your infrastructure:  
-    - Use the server's default dns resolvers (resolv.conf) to avoid dns reflection floods against a stateless upstream filtering infrastructure. Floods reflected off an "external dns"'s IP range (ie Google) can cause an upstream firewall to overfilter (drop your dns).  
+    - Use the server's default dns resolvers (resolv.conf) to avoid dns reflection floods against a stateless upstream filtering infrastructure. Floods reflected off an "external dns"'s IP range (ie Google) can cause an upstream firewall to overfilter (drop your dns).               
 
 
 F. Base IP routing on your upstream filtering weak points (where they drop legitimate traffic or fail to filter). If they struggle with SYN for example, route with failovers and or with UDP being separated.     
@@ -439,6 +439,9 @@ F. Base IP routing on your upstream filtering weak points (where they drop legit
 
 G. Load balancing is another important factor: IPs, concurrent services running, disk writing, etc should all have contingencies for null routing/blackholing or migration of traffic.  
     * Though mentioned above, I'd like to specify IPs here, say you have 30 IPv4 addresses on a 1gb NIC, you could be flooded by a mere 33.3mbps to each IP (roughly 1000 to 5000 pps). It is vital to keep your internal rules not 'per-ip', then with a firewall privy to 'spread out' floods.  
+
+H. Minimize calls to other resources. For example, consider peppers for a website's login system. You shouldn't call your vault api every login POST, this makes you vulnerable to DoS. Most developers opt to call it less and store it on the database server's memory, but that isn't important for this. Where you send JSON, your endpoint can get hammered by huge request body floods. The solution to this is limiting the body size to a kb or so in nodejs or whatever your API runs on, but this is also an aside. The point I wanted to make with both examples is that you want to analyze every call to another resource and mitigate risks in some way.        
+
 - Lock app dependencies to prevent catastrophic updates interfering with your 'security profile'.  
 - Sandbox systemd or Linux Namespaces.  
   * This can break apps, check this first before disabling other security measures or troubleshooting.  
