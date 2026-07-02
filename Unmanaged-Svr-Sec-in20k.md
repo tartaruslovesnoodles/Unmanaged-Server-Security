@@ -1,5 +1,5 @@
 # Unmanned Server Security - Basic Operational Guide   
-## (context): This repository is about unmanaged server (mostly headless linux deployments) setup/security and best practices. This markdown file is a simple prototype for conveying this information, utilise sub folders for automated versions of portions of the instructions listed here as they come. You'll notice this document contains many vague suggestions. Simply because I want to keep this relevant/helpful even as technology and companies shift or mutate over time. This document is designed to be easily researchable (i.e. the newest distros of certain OSs) to counteract any errors caused by ambiguity.
+## (context): This repository is about unmanaged server (mostly headless linux deployments) setup/security and best practices. This markdown file is a simple prototype for conveying this information, utilize sub folders for automated versions of portions of the instructions listed here as they come. You'll notice this document contains many vague suggestions. Simply because I want to keep this relevant/helpful even as technology and companies shift or mutate over time. This document is designed to be easily researchable (i.e. the newest distros of certain OSs) to counteract any errors caused by ambiguity.
 
 Unmanaged server within this document's context refers to servers you purchase that come with largely unmodified and default permissions, with you (end user) getting full root access. That is to say the ISP doesn't manage it or run the service for you.    
 
@@ -22,7 +22,7 @@ This guide does not claim absolute protection against groups with near unlimited
  G. Secure physical access (if applicable).  
  H. Encrypt disk (unless renting, but still consider it even then).  
  I. Create a sudo user, disable root, change ssh port, swap to ssh keys and off of passwords, whitelist ssh port and move ssh to an IP with no existing service or app (ie no rdns, no web server, dns resolver, etc). Check out section 3, SSH setup, for more in-depth SSH security and SSH hardening.  
- J. Firewall doctrine should be to whitelist needed services and drop the rest (mirror this upstream if your host has upstream firewall customization).  
+ J. Apply your firewall. Firewall doctrine should be to whitelist needed services and drop the rest (mirror this upstream if your host has upstream firewall customization).  
  K. Setup Apparmor/SELinux and build around it without making convenience changes.   
  L. Rotate logs and do remote log shipping if possible.   
  M. Enable automatic security updates.  
@@ -30,7 +30,8 @@ This guide does not claim absolute protection against groups with near unlimited
 
 
 1 - Network/Env Concerns
-
+- If the server is rented in a different country and or region operating under different digital technology laws, ensure you're privy to the difference and know your rights.
+- Confirm third party 'broad-dependencies' (ie a payment merchant like stripe) are secure or you have a failsafe for each of their specific security failures.   
 - Confirm out of band access (kvm, rescue boot, console, etc).   
 - Confirm a rollback path (i.e. snapshot/backup and test a restore) and secure offsite storage.            
  A. Recovery is primarily for the control plane or the server that holds referenced files and communicates through the network. For data plane or servers that primarily fetch and transmit data, snapshots aren't needed and may be a security detriment in some cases.    
@@ -442,7 +443,8 @@ G. Load balancing is another important factor: IPs, concurrent services running,
 
 H. Minimize calls to other resources. For example, consider peppers for a website's login system. You shouldn't call your vault api every login POST, this makes you vulnerable to DoS. Most developers opt to call it less and store it on the database server's memory, but that isn't important for this. Where you send JSON, your endpoint can get hammered by huge request body floods. The solution to this is limiting the body size to a kb or so in nodejs or whatever your API runs on, but this is also an aside. The point I wanted to make with both examples is that you want to analyze every call to another resource and mitigate risks in some way.        
 
-- Lock app dependencies to prevent catastrophic updates interfering with your 'security profile'.  
+- Lock app dependencies to prevent catastrophic updates interfering with your 'security profile'.
+-   Add abuse throttling at every level. For example don't rely on your ISP to stop bruteforce logins with their DoS rate limits. Likewise, despite using iptables under your ISP's own upstream firewall (and if possible your own upstream firewall cfg too), your app shouldn't rely on either/both ratelimits to mitigate a bruteforce attack, it should have its own filtering too. It is this "layering" of security that keeps things air tight. Just like increasing a lid’s complexity/seal quality will prolong freshness for its product.   
 - Sandbox systemd or Linux Namespaces.  
   * This can break apps, check this first before disabling other security measures or troubleshooting.  
   
